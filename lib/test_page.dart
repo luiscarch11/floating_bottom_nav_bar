@@ -10,6 +10,7 @@ class TestPage extends StatelessWidget {
           Align(
             alignment: Alignment.bottomCenter,
             child: FloatingBottomNavBarWidget(
+              text: 'Hola mundo',
               imagePath: 'assets/images/animation_image.png',
               smallImagePath: 'assets/images/small_photo.png',
               maxWidth: MediaQuery.of(context).size.width,

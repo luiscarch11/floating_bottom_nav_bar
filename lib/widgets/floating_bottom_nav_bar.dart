@@ -7,13 +7,21 @@ class FloatingBottomNavBarWidget extends StatefulWidget {
   const FloatingBottomNavBarWidget({
     Key? key,
     required this.maxWidth,
+    this.baseWidth = 185.0,
+    this.baseHeight = 70.0,
     required this.imagePath,
+    required this.text,
     required this.smallImagePath,
     this.foldedLeftIcon,
+    this.color,
   }) : super(key: key);
   final double maxWidth;
+  final double baseWidth;
+  final double baseHeight;
+  final String text;
   final Widget? foldedLeftIcon;
   final String imagePath;
+  final Color? color;
   final String smallImagePath;
   @override
   _FloatingBottomNavBarWidgetState createState() =>
@@ -31,8 +39,6 @@ class _FloatingBottomNavBarWidgetState extends State<FloatingBottomNavBarWidget>
   late Tween<double> heightTween;
   double substraction = 0;
 
-  final baseWidth = 185.0;
-  final baseHeight = 70.0;
   @override
   void initState() {
     controller = AnimationController(
@@ -71,38 +77,9 @@ class _FloatingBottomNavBarWidgetState extends State<FloatingBottomNavBarWidget>
     return Transform.translate(
       offset: Offset(0, padding.value),
       child: GestureDetector(
-        onTap: () {
-          if (controller.value > 0) {
-            final currentHeight = height.value + substraction;
-            controller.reverse(from: currentHeight / 100);
-          } else
-            controller.animateTo(1);
-
-          substraction = 0;
-        },
-        onVerticalDragEnd: (details) {
-          final currentHeight = baseWidth + height.value + substraction;
-          final velocity = details.primaryVelocity ?? 0;
-          if (velocity > 1000 ||
-              (_heigthValue < _maxHeight / 2 && velocity >= 0)) {
-            controller.reverse(from: currentHeight / 300);
-          } else {
-            setState(() {
-              substraction = 0;
-            });
-          }
-        },
-        onVerticalDragUpdate: (details) {
-          if (details.delta.dy > 0) {
-            setState(() {
-              substraction = substraction - _maxHeight * .01;
-            });
-          } else {
-            setState(() {
-              substraction = substraction + _maxHeight * .01;
-            });
-          }
-        },
+        onTap: _expandOrFold,
+        onVerticalDragEnd: _foldOrExpandFromVelocity,
+        onVerticalDragUpdate: _changeSizeContainerSizeFromDrag,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           width: _widthValue,
@@ -114,7 +91,7 @@ class _FloatingBottomNavBarWidgetState extends State<FloatingBottomNavBarWidget>
             right: 15,
           ),
           decoration: BoxDecoration(
-            color: BottomNavBarColors.primary,
+            color: widget.color ?? BottomNavBarColors.primary,
             borderRadius: BorderRadius.vertical(
                 top: Radius.circular(
                     controller.status == AnimationStatus.dismissed ? 20 : 30),
@@ -143,6 +120,42 @@ class _FloatingBottomNavBarWidgetState extends State<FloatingBottomNavBarWidget>
       ),
     );
   }
+
+  void _expandOrFold() {
+    if (controller.value > 0) {
+      final currentHeight = height.value + substraction;
+      controller.reverse(from: currentHeight / 100);
+    } else
+      controller.animateTo(1);
+
+    substraction = 0;
+  }
+
+  void _changeSizeContainerSizeFromDrag(DragUpdateDetails details) {
+    if (details.delta.dy > 0) {
+      setState(() {
+        substraction = substraction - _maxHeight * .01;
+      });
+    } else {
+      setState(() {
+        substraction = substraction + _maxHeight * .01;
+      });
+    }
+  }
+
+  void _foldOrExpandFromVelocity(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity > 1000 || (_heigthValue < _maxHeight / 2 && velocity >= 0)) {
+      controller.reverse(from: _heigthValue / _maxHeight);
+    } else {
+      setState(() {
+        substraction = 0;
+      });
+    }
+  }
+
+  double get baseWidth => widget.baseWidth;
+  double get baseHeight => widget.baseHeight;
 
   double get _maxHeight => 500;
   double get _widthValue {
@@ -237,7 +250,7 @@ class _ExpandedContent extends StatelessWidget {
             height: 40,
           ),
           Text(
-            'Bloody Tear',
+            widget.text,
             style: TextStyle(
               color: BottomNavBarColors.secondary,
               fontWeight: FontWeight.bold,
